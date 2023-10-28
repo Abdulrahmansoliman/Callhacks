@@ -1,38 +1,42 @@
 import reflex as rx
-from Models.Users import User
-import initial
+from typing import Optional
 
-# Define a route to get all users
-from reflex import DBConfig
+from sqlmodel import Field
 
+from reflex import Model, session, DBConfig
 
-config = rx.Config(
-    app_name="Classifier",
-    db_url="sqlite:///reflex.db",
-    db_config=rx.DBConfig(engine="postgresql+psycopg2", username="Classifier",
-                          password="12345", host="localhost", port=5432, database="reflex"),
-)
+# Configure DB
 
-DBConfig.sqlite(database="reflex.db")
-DBConfig.postgresql(username="Classifier", password="12345",
-                    host="localhost", port=5432, database="reflex")
-DBConfig.postgresql_psycopg2(username="Classifier",
-                             password="12345", host="localhost", port=5432, database="reflex")
+# Define User model
+class User(rx.Model, table=True):
+    username: str = Field() 
+    email: str = Field()
+    password: str = Field()
 
 
-async def get_all_users():
-    # Use the User model to query the database and retrieve all users
-    users = User.select()
-
-    # Convert the user data to a list of dictionaries
-    user_data = [{'username': user.username, 'email': user.email}
-                 for user in users]
-
-    return user_data
 
 
-# Create the app and compile it.
-app = rx.App(style=rx.styles.base_style)
-app.api.add_api_route("/users", get_all_users)
 
+# Insert new user
+with rx.session() as session:
+    session.add(
+        User(username="test", email="admin@pynecone.io", password="admin"))
+    session.commit()
+
+# Retrieve users
+users = User.select()
+for user in users:
+    print(user.username, user.email)
+
+# API route
+
+
+# @app.api.route("/users")
+# async def get_all_users():
+#     users = User.select()
+#     user_data = [dict(username=u.username, email=u.email) for u in users]
+#     return user_data
+
+# Create and compile app
+app = rx.App()
 app.compile()
